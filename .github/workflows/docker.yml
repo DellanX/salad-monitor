@@ -17,11 +17,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python version file for releases
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Extract version from tag
         run: |
-          echo "VERSION='${GITHUB_REF#refs/tags/}'" > version.py
+          VERSION="${GITHUB_REF#refs/tags/}"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
+      - name: Write version.py into build context
+        run: |
+          echo "VERSION='${VERSION}'" > version.py
+          echo "Generated version.py:"
+          cat version.py
       - name: Login to GHCR
         uses: docker/login-action@v3
         with:
