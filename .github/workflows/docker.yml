@@ -38,7 +38,7 @@ jobs:
 
       - name: Push image
         run: |
-          docker push ghcr.io/${{ github.repository_owner }}/salad-monitor:latest
+          docker push ghcr.io/dellanx/salad-monitor:latest
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
-            docker push ghcr.io/${{ github.repository_owner }}/salad-monitor:${GITHUB_REF#refs/tags/}
+            docker push ghcr.io/dellanx/salad-monitor:${GITHUB_REF#refs/tags/}
           fi
