@@ -33,8 +33,8 @@ jobs:
       - name: Build image
         run: |
           docker build \
-            -t ghcr.io/${{ github.repository_owner }}/salad-monitor:latest \
-            -t ghcr.io/${{ github.repository_owner }}/salad-monitor:${GITHUB_REF#refs/tags/} .
+            -t ghcr.io/dellanx/salad-monitor:latest \
+            -t ghcr.io/dellanx/salad-monitor:${GITHUB_REF#refs/tags/} .
 
       - name: Push image
         run: |
