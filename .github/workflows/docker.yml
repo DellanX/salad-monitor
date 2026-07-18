@@ -1,0 +1,44 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches: ["main"]
+  release:
+    types: ["published"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python version file for releases
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          echo "VERSION='${GITHUB_REF#refs/tags/}'" > version.py
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build image
+        run: |
+          docker build \
+            -t ghcr.io/${{ github.repository_owner }}/salad-monitor:latest \
+            -t ghcr.io/${{ github.repository_owner }}/salad-monitor:${GITHUB_REF#refs/tags/} .
+
+      - name: Push image
+        run: |
+          docker push ghcr.io/${{ github.repository_owner }}/salad-monitor:latest
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            docker push ghcr.io/${{ github.repository_owner }}/salad-monitor:${GITHUB_REF#refs/tags/}
+          fi
