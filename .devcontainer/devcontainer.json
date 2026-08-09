@@ -7,7 +7,8 @@
       "extensions": [
         "ms-python.python",
         "ms-python.vscode-pylance",
-        "ms-python.black-formatter"
+        "ms-python.black-formatter",
+        "ms-python.debugpy"
       ],
       "settings": {
         "python.defaultInterpreterPath": "/usr/local/bin/python",
@@ -25,5 +26,16 @@
   
   "forwardPorts": [8000],
   
-  "remoteUser": "vscode"
+  "remoteUser": "vscode",
+  "updateRemoteUserUID": true,
+  
+  "containerEnv": {
+    "LOG_DIR": "/workspaces/salad-monitor/logs"
+  },
+  
+  "mounts": [
+    "source=${localWorkspaceFolder},target=/workspaces/salad-monitor,type=bind,consistency=cached"
+  ],
+  
+  "workspaceFolder": "/workspaces/salad-monitor"
 }

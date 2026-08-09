@@ -1,0 +1,40 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug FastAPI Server",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": ["src.app:app", "--host", "0.0.0.0", "--port", "8000", "--reload"],
+      "jinja": true,
+      "env": {
+        "LOG_DIR": "${workspaceFolder}/logs"
+      },
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Debug Current File",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Debug Tests",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["tests/", "-v", "-s"],
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Debug Specific Test File",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["${file}", "-v", "-s"],
+      "console": "integratedTerminal"
+    }
+  ]
+}
