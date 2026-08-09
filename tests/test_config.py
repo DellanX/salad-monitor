@@ -54,7 +54,8 @@ class TestConfig:
         with patch.dict(os.environ, {}, clear=True):
             with patch.object(config, "debug"):
                 result = config.resolve_log_dir()
-                assert result == "/logs"
+                expected = r"C:\ProgramData\Salad\logs" if os.name == "nt" else "/logs"
+                assert result == expected
 
     def test_resolve_log_dir_custom(self):
         """Test resolve_log_dir returns custom path from env var."""
@@ -69,3 +70,11 @@ class TestConfig:
         # This tests the try/except in config.py
         # If version module doesn't exist, VERSION should be "unknown"
         assert isinstance(config.VERSION, str)
+
+    def test_runtime_settings_shape(self):
+        """Test runtime settings include collector mode keys."""
+        runtime = config.get_runtime_settings()
+        assert "COLLECTOR_MODE" in runtime
+        assert "SIDECAR_STALE_SECONDS" in runtime
+        assert "MINIMUM_SIDECAR_VERSION" in runtime
+        assert runtime["MINIMUM_SIDECAR_VERSION"] == config.VERSION

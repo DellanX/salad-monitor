@@ -1,0 +1,88 @@
+name: Build Windows EXE
+
+on:
+  push:
+    tags:
+      - "*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to embed (example: 0.2.2 or v0.2.2)"
+        required: false
+        default: "0.2.0"
+
+jobs:
+  build-windows-exe:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Resolve build version
+        shell: pwsh
+        run: |
+          if ("${{ github.ref_type }}" -eq "tag") {
+            $buildVersion = "${{ github.ref_name }}"
+          } elseif ("${{ github.event.inputs.version }}") {
+            $buildVersion = "${{ github.event.inputs.version }}"
+          } else {
+            $buildVersion = "0.2.0"
+          }
+          "BUILD_VERSION=$buildVersion" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Host "Using BUILD_VERSION=$buildVersion"
+
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-build.txt
+
+      - name: Write version.py for runtime
+        shell: pwsh
+        run: |
+          $runtimeVersion = "$env:BUILD_VERSION"
+          if ($runtimeVersion.StartsWith("v")) {
+            $runtimeVersion = $runtimeVersion.Substring(1)
+          }
+          "VERSION='$runtimeVersion'" | Set-Content -Path version.py -Encoding utf8
+          Get-Content version.py
+
+      - name: Build Windows executables
+        shell: pwsh
+        run: |
+          .\scripts\build-windows.ps1 -Version "$env:BUILD_VERSION"
+
+      - name: Generate checksums
+        shell: pwsh
+        run: |
+          Get-FileHash .\dist\salad-monitor.exe -Algorithm SHA256 | ForEach-Object { "$($_.Hash)  salad-monitor.exe" } | Set-Content .\dist\SHA256SUMS.txt
+          Get-FileHash .\dist\salad-sidecar.exe -Algorithm SHA256 | ForEach-Object { "$($_.Hash)  salad-sidecar.exe" } | Add-Content .\dist\SHA256SUMS.txt
+          Get-Content .\dist\SHA256SUMS.txt
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-executables-${{ env.BUILD_VERSION }}
+          path: |
+            dist/salad-monitor.exe
+            dist/salad-sidecar.exe
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+
+      - name: Attach assets to release (tags only)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/salad-monitor.exe
+            dist/salad-sidecar.exe
+            dist/SHA256SUMS.txt

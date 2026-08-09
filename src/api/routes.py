@@ -3,9 +3,17 @@
 import os
 from fastapi import APIRouter
 
-from src.config import DEBUG, VERSION, resolve_log_dir, get_feature_flags
+from src.config import (
+    DEBUG,
+    VERSION,
+    resolve_log_dir,
+    get_feature_flags,
+    get_runtime_settings,
+    COLLECTOR_MODE,
+)
 from src.state import state
 from src.log_watcher import get_all_log_files, read_logfile_lines
+from src.sidecar import get_sidecar_status
 
 router = APIRouter()
 
@@ -74,5 +82,10 @@ def health():
         "version": VERSION,
         "debug": DEBUG,
         "features": get_feature_flags(),
+        "collector": {
+            "mode": COLLECTOR_MODE,
+            "runtime": get_runtime_settings(),
+            "sidecar": get_sidecar_status() if COLLECTOR_MODE == "sidecar_push" else None,
+        },
         "state": state,
     }

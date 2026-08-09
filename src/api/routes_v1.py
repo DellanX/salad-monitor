@@ -1,14 +1,34 @@
 """FastAPI v1 route definitions with enhanced monitoring capabilities."""
 
 import os
-from fastapi import APIRouter
+from fastapi import APIRouter, Header, HTTPException, status
 from typing import Dict, Any
+from pydantic import BaseModel, Field
 
-from src.config import DEBUG, VERSION, resolve_log_dir, get_feature_flags
+from src.config import (
+    DEBUG,
+    VERSION,
+    resolve_log_dir,
+    get_feature_flags,
+    get_runtime_settings,
+    COLLECTOR_MODE,
+    SIDECAR_AUTH_TOKEN,
+)
 from src.state import state, update_job_uptime
 from src.log_watcher import get_all_log_files, read_logfile_lines
+from src.sidecar import apply_sidecar_payload, get_sidecar_status
 
 router = APIRouter(prefix="/api/v1", tags=["v1"])
+
+
+class SidecarPayload(BaseModel):
+    """Payload sent from the Windows sidecar into docker-hosted monitor."""
+
+    sidecar_version: str = Field(..., min_length=1)
+    schema_version: str | None = None
+    host_id: str | None = None
+    collected_at: str | None = None
+    state: dict[str, Any] = Field(default_factory=dict)
 
 
 def _serialize_state(state_dict: Dict[str, Any]) -> Dict[str, Any]:
@@ -37,7 +57,51 @@ def health_v1():
         "version": VERSION,
         "debug": DEBUG,
         "features": get_feature_flags(),
+        "collector": {
+            "mode": COLLECTOR_MODE,
+            "runtime": get_runtime_settings(),
+            "sidecar": get_sidecar_status() if COLLECTOR_MODE == "sidecar_push" else None,
+        },
         "state": _serialize_state(state),
+    }
+
+
+@router.get("/collector")
+def collector_status():
+    """Get collector mode status and sidecar health."""
+    return {
+        "mode": COLLECTOR_MODE,
+        "runtime": get_runtime_settings(),
+        "sidecar": get_sidecar_status() if COLLECTOR_MODE == "sidecar_push" else None,
+    }
+
+
+@router.post("/sidecar/report")
+def sidecar_report(payload: SidecarPayload, x_sidecar_token: str | None = Header(default=None)):
+    """Accept state payload from Windows sidecar when running in sidecar mode."""
+    if COLLECTOR_MODE != "sidecar_push":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Sidecar reporting is only available in COLLECTOR_MODE=sidecar_push.",
+        )
+
+    if not SIDECAR_AUTH_TOKEN:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="SIDECAR_AUTH_TOKEN is required when COLLECTOR_MODE=sidecar_push.",
+        )
+
+    if x_sidecar_token != SIDECAR_AUTH_TOKEN:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid sidecar token.",
+        )
+
+    apply_sidecar_payload(payload.model_dump())
+    return {
+        "accepted": True,
+        "collector_mode": COLLECTOR_MODE,
+        "sidecar": get_sidecar_status(),
     }
 
 
@@ -172,6 +236,7 @@ def process_info():
             "active": state.get("miner_active", False),
             "name": state.get("miner_name"),
         },
+        "source": state.get("process_data_source"),
     }
 
 

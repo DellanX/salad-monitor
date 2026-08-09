@@ -79,6 +79,9 @@ ENABLE_GPU_DEMAND_API=true
 ENABLE_NETWORK_MONITORING=true
 ENABLE_PROCESS_MONITORING=true
 GPU_DEMAND_CACHE_MINUTES=5
+COLLECTOR_MODE=sidecar_push
+SIDECAR_AUTH_TOKEN=change-me
+SIDECAR_STALE_SECONDS=120
 ```
 
 ### 2. Create Required Directories
@@ -208,6 +211,8 @@ All endpoints available at `http://localhost:8000/api/v1/`:
 | `GET /wsl` | WSL status (Windows only) |
 | `GET /gpu-demand` | GPU demand data |
 | `GET /processes` | Salad process info |
+| `GET /collector` | Collector/sidecar mode status |
+| `POST /sidecar/report` | Ingest sidecar payload (token required) |
 | `GET /logs` | List available logs |
 | `GET /tail` | Last N lines of current log |
 
@@ -222,6 +227,31 @@ All endpoints available at `http://localhost:8000/api/v1/`:
 - `ENABLE_GPU_DEMAND_API` (default: `true`)
 - `ENABLE_NETWORK_MONITORING` (default: `true`)
 - `ENABLE_PROCESS_MONITORING` (default: `true`)
+
+### Collector Settings
+- `COLLECTOR_MODE` - `local_psutil`, `sidecar_push`, `volume_scan` (default: `local_psutil`)
+- `SIDECAR_AUTH_TOKEN` - required in `sidecar_push` mode
+- `SIDECAR_STALE_SECONDS` - sidecar timeout threshold (default: `120`)
+- `SALAD_VERSION_FILE` - optional version file/EXE path for `volume_scan`
+- `SALAD_BOWL_VERSION_FILE` - optional version file/EXE path for `volume_scan`
+
+## Sidecar Auth Kickoff
+
+Authentication is a pre-shared token:
+
+1. Configure container:
+   - `COLLECTOR_MODE=sidecar_push`
+   - `SIDECAR_AUTH_TOKEN=<long-random-token>`
+2. Restart container.
+3. Configure sidecar with same token:
+   - `SIDECAR_AUTH_TOKEN=<same-token>`
+   - `SIDECAR_TARGET_HOST=<monitor-host>`
+   - `SIDECAR_TARGET_PORT=8000` (or your mapped port)
+4. Start sidecar executable/service.
+5. Confirm link:
+   - `GET /api/v1/collector`
+   - expect `sidecar.stale=false` and a recent `sidecar.last_seen`.
+   - `minimum_supported_version` matches the monitor build version.
 
 ### GPU Configuration
 - `NVIDIA_VISIBLE_DEVICES` - Which GPUs to expose (default: `all`)

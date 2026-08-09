@@ -3,10 +3,11 @@
 import threading
 from fastapi import FastAPI
 
-from src.config import debug, resolve_log_dir
+from src.config import debug, resolve_log_dir, COLLECTOR_MODE
 from src.api.routes import router as legacy_router
 from src.api.routes_v1 import router as v1_router
 from src.monitor import monitor_logs
+from src import state as state_module
 
 
 def create_app() -> FastAPI:
@@ -26,6 +27,7 @@ def create_app() -> FastAPI:
     @app.on_event("startup")
     def start_monitor():
         log_dir = resolve_log_dir()
+        state_module.set_collector_mode(COLLECTOR_MODE)
         debug(f"[startup] Launching monitor thread for directory: {log_dir}")
         threading.Thread(target=monitor_logs, daemon=True).start()
 
