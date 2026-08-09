@@ -1,0 +1,35 @@
+{
+  "name": "Salad Monitor Dev",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
+  
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-python.black-formatter",
+        "ms-python.debugpy"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.testing.pytestEnabled": true,
+        "python.testing.unittestEnabled": false,
+        "python.testing.pytestArgs": ["tests"],
+        "python.linting.enabled": true,
+        "python.linting.pylintEnabled": false,
+        "python.formatting.provider": "black"
+      }
+    }
+  },
+
+  "postCreateCommand": "pip install -r requirements.txt",
+  
+  "forwardPorts": [8001],
+  
+  "remoteUser": "vscode",
+  "updateRemoteUserUID": true,
+  
+  "containerEnv": {
+    "LOG_DIR": "${containerWorkspaceFolder}/logs"
+  }
+}
