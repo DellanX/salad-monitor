@@ -42,45 +42,66 @@ class TestRoutesV1:
         assert response.status_code == 200
         assert "monitor_running" in response.json()
 
+    @patch('src.api.routes_v1.get_feature_flags')
+    def test_v1_health_includes_feature_flags(self, mock_get_feature_flags, v1_client):
+        """Test v1 health endpoint includes feature toggle status."""
+        mock_get_feature_flags.return_value = {
+            "ENABLE_HARDWARE_MONITORING": True,
+            "ENABLE_GPU_DEMAND_API": True,
+            "ENABLE_NETWORK_MONITORING": False,
+            "ENABLE_PROCESS_MONITORING": True,
+        }
+
+        response = v1_client.get("/api/v1/health")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["features"] == {
+            "ENABLE_HARDWARE_MONITORING": True,
+            "ENABLE_GPU_DEMAND_API": True,
+            "ENABLE_NETWORK_MONITORING": False,
+            "ENABLE_PROCESS_MONITORING": True,
+        }
+
     def test_v1_extended_health(self, v1_client, reset_state):
         """Test v1 extended health endpoint if available."""
         response = v1_client.get("/api/v1/health-extended")
-        
+
         # May return 404 if route doesn't exist
         assert response.status_code in [200, 404]
 
     def test_v1_metrics_summary(self, v1_client, reset_state):
         """Test v1 metrics summary endpoint if available."""
         response = v1_client.get("/api/v1/metrics/summary")
-        
+
         # May return 404 if route doesn't exist
         assert response.status_code in [200, 404]
 
     def test_v1_job_info(self, v1_client, reset_state):
         """Test v1 job info endpoint if available."""
         response = v1_client.get("/api/v1/job-info")
-        
+
         # May return 404 if route doesn't exist
         assert response.status_code in [200, 404]
 
     def test_v1_download_status(self, v1_client, reset_state):
         """Test v1 download status endpoint if available."""
         response = v1_client.get("/api/v1/download-status")
-        
+
         # May return 404 if route doesn't exist
         assert response.status_code in [200, 404]
 
     def test_v1_wallet_status(self, v1_client, reset_state):
         """Test v1 wallet status endpoint if available."""
         response = v1_client.get("/api/v1/wallet-status")
-        
+
         # May return 404 if route doesn't exist
         assert response.status_code in [200, 404]
 
     def test_v1_hardware_stats(self, v1_client, reset_state):
         """Test v1 hardware stats endpoint if available."""
         response = v1_client.get("/api/v1/hardware-stats")
-        
+
         # May return 404 if route doesn't exist
         assert response.status_code in [200, 404]
 
@@ -91,7 +112,7 @@ class TestRoutesV1:
         state.state["wallet_balance"] = "$100.00"
         state.state["download_progress_pct"] = 50.0
         state.state["cpu_load_pct"] = 25.5
-        
+
         # Try endpoints
         endpoints = [
             "/api/v1/health-extended",
@@ -101,7 +122,7 @@ class TestRoutesV1:
             "/api/v1/wallet-status",
             "/api/v1/hardware-stats"
         ]
-        
+
         for endpoint in endpoints:
             response = v1_client.get(endpoint)
             # Should either succeed or be not found, not error
@@ -112,6 +133,6 @@ class TestRoutesV1:
         # Verify v1 health endpoint works
         response = v1_client.get("/api/v1/health")
         assert response.status_code == 200
-         
+
         # Verify that the endpoint has the /api/v1 prefix in the URL
         assert "/api/v1" in str(response.request.url)

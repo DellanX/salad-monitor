@@ -40,9 +40,9 @@ class TestAPIRoutes:
         # Set some state
         state.state["salad_active"] = True
         state.state["last_event"] = "active"
-        
+
         response = client.get("/gpu-status")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["salad_active"] is True
@@ -52,9 +52,9 @@ class TestAPIRoutes:
         """Test /current-logfile endpoint."""
         test_path = "/logs/test.log"
         state.state["current_logfile"] = test_path
-        
+
         response = client.get("/current-logfile")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["current_logfile"] == test_path
@@ -62,7 +62,7 @@ class TestAPIRoutes:
     def test_current_logfile_none(self, client, reset_state):
         """Test /current-logfile when no logfile is set."""
         response = client.get("/current-logfile")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["current_logfile"] is None
@@ -73,13 +73,13 @@ class TestAPIRoutes:
         """Test /current-logfile-contents endpoint."""
         test_path = "/logs/test.log"
         test_lines = ["line 1", "line 2", "line 3"]
-        
+
         state.state["current_logfile"] = test_path
         mock_exists.return_value = True
         mock_read.return_value = test_lines
-        
+
         response = client.get("/current-logfile-contents")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["logfile"] == test_path
@@ -92,13 +92,13 @@ class TestAPIRoutes:
         """Test /current-logfile-contents endpoint with line limit."""
         test_path = "/logs/test.log"
         test_lines = ["line 1", "line 2"]
-        
+
         state.state["current_logfile"] = test_path
         mock_exists.return_value = True
         mock_read.return_value = test_lines
-        
+
         response = client.get("/current-logfile-contents?lines=10")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["lines"] == test_lines
@@ -108,9 +108,9 @@ class TestAPIRoutes:
     def test_current_logfile_contents_no_file(self, mock_exists, client, reset_state):
         """Test /current-logfile-contents when logfile doesn't exist."""
         state.state["current_logfile"] = None
-        
+
         response = client.get("/current-logfile-contents")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert "error" in data
@@ -121,9 +121,9 @@ class TestAPIRoutes:
         """Test /logs endpoint."""
         mock_resolve.return_value = "/test/logs"
         mock_get_files.return_value = ["file1.log", "file2.log"]
-        
+
         response = client.get("/logs")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["log_dir"] == "/test/logs"
@@ -135,13 +135,13 @@ class TestAPIRoutes:
         """Test /tail endpoint."""
         test_path = "/logs/test.log"
         test_lines = ["line 1", "line 2"]
-        
+
         state.state["current_logfile"] = test_path
         mock_exists.return_value = True
         mock_read.return_value = test_lines
-        
+
         response = client.get("/tail")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["logfile"] == test_path
@@ -154,13 +154,13 @@ class TestAPIRoutes:
         """Test /tail endpoint with custom line count."""
         test_path = "/logs/test.log"
         test_lines = ["line 1"]
-        
+
         state.state["current_logfile"] = test_path
         mock_exists.return_value = True
         mock_read.return_value = test_lines
-        
+
         response = client.get("/tail?lines=100")
-        
+
         assert response.status_code == 200
         mock_read.assert_called_once_with(test_path, 100)
 
@@ -168,9 +168,9 @@ class TestAPIRoutes:
     def test_tail_raw_no_file(self, mock_exists, client, reset_state):
         """Test /tail when no logfile is available."""
         state.state["current_logfile"] = None
-        
+
         response = client.get("/tail")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert "error" in data
@@ -179,7 +179,7 @@ class TestAPIRoutes:
     def test_version(self, client):
         """Test /version endpoint."""
         response = client.get("/version")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["version"] == "test-version-1.2.3"
@@ -188,7 +188,7 @@ class TestAPIRoutes:
     def test_debug_status_enabled(self, client):
         """Test /debug endpoint when debug is enabled."""
         response = client.get("/debug")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["debug"] is True
@@ -197,7 +197,7 @@ class TestAPIRoutes:
     def test_debug_status_disabled(self, client):
         """Test /debug endpoint when debug is disabled."""
         response = client.get("/debug")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["debug"] is False
@@ -205,14 +205,21 @@ class TestAPIRoutes:
     @patch('src.api.routes.resolve_log_dir')
     @patch('src.api.routes.VERSION', 'test-version')
     @patch('src.api.routes.DEBUG', True)
-    def test_health(self, mock_resolve, client, reset_state):
+    @patch('src.api.routes.get_feature_flags')
+    def test_health(self, mock_get_feature_flags, mock_resolve, client, reset_state):
         """Test /health endpoint."""
         mock_resolve.return_value = "/test/logs"
+        mock_get_feature_flags.return_value = {
+            "ENABLE_HARDWARE_MONITORING": True,
+            "ENABLE_GPU_DEMAND_API": False,
+            "ENABLE_NETWORK_MONITORING": True,
+            "ENABLE_PROCESS_MONITORING": False,
+        }
         state.state["current_logfile"] = "/test/logs/current.log"
         state.state["salad_active"] = True
-        
+
         response = client.get("/health")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["monitor_running"] is True
@@ -220,13 +227,19 @@ class TestAPIRoutes:
         assert data["log_dir"] == "/test/logs"
         assert data["version"] == "test-version"
         assert data["debug"] is True
+        assert data["features"] == {
+            "ENABLE_HARDWARE_MONITORING": True,
+            "ENABLE_GPU_DEMAND_API": False,
+            "ENABLE_NETWORK_MONITORING": True,
+            "ENABLE_PROCESS_MONITORING": False,
+        }
         assert "state" in data
         assert data["state"]["salad_active"] is True
 
     def test_health_monitor_always_running(self, client):
         """Test /health always reports monitor as running."""
         response = client.get("/health")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["monitor_running"] is True

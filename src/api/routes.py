@@ -3,7 +3,7 @@
 import os
 from fastapi import APIRouter
 
-from src.config import DEBUG, VERSION, resolve_log_dir
+from src.config import DEBUG, VERSION, resolve_log_dir, get_feature_flags
 from src.state import state
 from src.log_watcher import get_all_log_files, read_logfile_lines
 
@@ -73,5 +73,6 @@ def health():
         "log_dir": resolve_log_dir(),
         "version": VERSION,
         "debug": DEBUG,
+        "features": get_feature_flags(),
         "state": state,
     }
