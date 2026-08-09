@@ -4,7 +4,7 @@ import os
 from fastapi import APIRouter
 from typing import Dict, Any
 
-from src.config import DEBUG, VERSION, resolve_log_dir
+from src.config import DEBUG, VERSION, resolve_log_dir, get_feature_flags
 from src.state import state, update_job_uptime
 from src.log_watcher import get_all_log_files, read_logfile_lines
 
@@ -14,7 +14,7 @@ router = APIRouter(prefix="/api/v1", tags=["v1"])
 def _serialize_state(state_dict: Dict[str, Any]) -> Dict[str, Any]:
     """Serialize state dict, converting datetime objects to ISO strings."""
     from datetime import datetime
-    
+
     result = {}
     for key, value in state_dict.items():
         if isinstance(value, datetime):
@@ -29,13 +29,14 @@ def health_v1():
     """Get comprehensive health and status information (v1)."""
     # Update job uptime before returning
     update_job_uptime()
-    
+
     return {
         "monitor_running": True,
         "current_logfile": state.get("current_logfile"),
         "log_dir": resolve_log_dir(),
         "version": VERSION,
         "debug": DEBUG,
+        "features": get_feature_flags(),
         "state": _serialize_state(state),
     }
 
@@ -54,7 +55,7 @@ def wallet_info():
 def job_info():
     """Get current job details and uptime."""
     update_job_uptime()
-    
+
     return {
         "job_id": state.get("job_id"),
         "start_time": state.get("job_start_time").isoformat() if state.get("job_start_time") else None,
