@@ -1,0 +1,34 @@
+# Extended Dockerfile for Windows with hardware monitoring support
+FROM python:3.11-slim-windows as base
+
+WORKDIR /app
+
+# Install system dependencies
+RUN pip install --no-cache-dir --upgrade pip
+
+# Copy requirements
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application
+COPY salad_monitor.py .
+COPY src/ ./src/
+
+# Create required directories
+RUN mkdir -p /logs /config /app/data
+
+# Set environment defaults
+ENV LOG_DIR=/logs
+ENV DEBUG=false
+ENV ENABLE_HARDWARE_MONITORING=true
+ENV ENABLE_GPU_DEMAND_API=true
+ENV ENABLE_NETWORK_MONITORING=true
+ENV ENABLE_PROCESS_MONITORING=true
+
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8000/api/v1/health || exit 1
+
+CMD ["uvicorn", "src.app:app", "--host", "0.0.0.0", "--port", "8000"]

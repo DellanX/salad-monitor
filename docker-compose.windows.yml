@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  salad-monitor:
+    build:
+      context: .
+      dockerfile: Dockerfile.windows
+    container_name: salad-monitor
+    ports:
+      - "8000:8000"
+    
+    # Required for GPU access on Windows
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    
+    # Volume mounts for log files and data persistence
+    volumes:
+      # Mount log directory from host
+      - ./logs:/logs
+      # Optional: mount config directory
+      - ./config:/config
+      # Optional: mount data directory for persistence
+      - ./data:/app/data
+    
+    # Environment variables for feature flags and configuration
+    environment:
+      # API Configuration
+      LOG_DIR: /logs
+      DEBUG: "false"
+      
+      # Feature Flags
+      ENABLE_HARDWARE_MONITORING: "true"
+      ENABLE_GPU_DEMAND_API: "true"
+      ENABLE_NETWORK_MONITORING: "true"
+      ENABLE_PROCESS_MONITORING: "true"
+      
+      # GPU Demand API cache (in minutes)
+      GPU_DEMAND_CACHE_MINUTES: "5"
+      
+      # GPU Configuration (for NVIDIA Container Toolkit)
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    
+    # Health check to monitor container status
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Network mode for better host communication
+    # Use "host" for Linux, bridge for Windows (default)
+    # On Windows, bridge is recommended for Docker Desktop
+    networks:
+      - salad-network
+
+networks:
+  salad-network:
+    driver: bridge
