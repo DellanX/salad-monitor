@@ -14,7 +14,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="Salad Monitor",
         description="GPU workload monitoring API with enhanced metrics",
-        version="2.0.0"
+        version="0.2.0"
     )
 
     # Include legacy routes (no prefix for backward compatibility)

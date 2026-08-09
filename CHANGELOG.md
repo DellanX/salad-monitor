@@ -7,9 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [2.0.0] - 2026-08-08
+## [0.2.0] - 2026-08-08
 
-### 🎉 Major Release: Enhanced Monitoring Capabilities
+### 🎉 Major Update: Enhanced Monitoring Capabilities
 
 This release adds comprehensive monitoring capabilities inspired by [SaladXRay](https://github.com/joseluisfreire/SaladXRay), transforming Salad Monitor from a basic log parser into a full-featured monitoring service.
 
@@ -73,7 +73,7 @@ This release adds comprehensive monitoring capabilities inspired by [SaladXRay](
 
 #### API Application
 - Updated FastAPI app to include both legacy and v1 routers
-- Version bumped to 2.0.0
+- Version bumped to 0.2.0
 
 ### Maintained
 
@@ -120,9 +120,9 @@ This release achieves feature parity with SaladXRay while adding:
 
 ---
 
-## [1.0.0] - Previous Release
+## [0.1.x] - Previous Releases
 
-### Initial Release
+### Initial Pre-Release
 
 #### Features
 - Basic Salad log parsing
@@ -140,9 +140,18 @@ This release achieves feature parity with SaladXRay while adding:
 
 ---
 
-## Future Roadmap
+---
 
-### Planned Features
+## Roadmap to 1.0.0
+
+### Before 1.0 Release
+- [ ] Complete unit test coverage
+- [ ] Production testing with real Salad logs
+- [ ] Performance optimization
+- [ ] Security review
+- [ ] Documentation review
+
+### Planned for Future Releases
 - [ ] WebSocket support for real-time updates
 - [ ] Historical data storage (SQLite/Redis)
 - [ ] Metrics export (Prometheus format)

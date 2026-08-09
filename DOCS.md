@@ -91,7 +91,7 @@ Welcome to the Salad Monitor documentation! This guide will help you navigate th
 
 ### Project History
 - [Changelog](CHANGELOG.md)
-- [Version 2.0 Release Notes](CHANGELOG.md#200---2026-08-08)
+- [Version 0.2 Release Notes](CHANGELOG.md#020---2026-08-08)
 
 ---
 
@@ -114,8 +114,8 @@ Welcome to the Salad Monitor documentation! This guide will help you navigate th
 #### ...write new unit tests
 → [TESTING.md - Writing Tests](TESTING.md#-writing-tests)
 
-#### ...understand what changed in v2.0
-→ [CHANGELOG.md - v2.0](CHANGELOG.md#200---2026-08-08)
+#### ...understand what changed in v0.2
+→ [CHANGELOG.md - v0.2](CHANGELOG.md#020---2026-08-08)
 
 #### ...configure feature toggles
 → [README.md - Environment Variables](README.md#environment-variables)
@@ -183,7 +183,7 @@ When updating documentation:
 ## 🔗 External Resources
 
 - [Salad.com](https://salad.com/) - The Salad platform
-- [SaladXRay](https://github.com/joseluisfreire/SaladXRay) - Inspiration for v2.0
+- [SaladXRay](https://github.com/joseluisfreire/SaladXRay) - Inspiration for v0.2
 - [FastAPI Documentation](https://fastapi.tiangolo.com/) - Web framework
 - [pytest Documentation](https://docs.pytest.org/) - Test framework
 - [Docker Documentation](https://docs.docker.com/) - Containerization
@@ -191,4 +191,4 @@ When updating documentation:
 ---
 
 **Last Updated:** 2026-08-08  
-**Version:** 2.0.0
+**Version:** 0.2.0 (Pre-release)

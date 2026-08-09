@@ -169,3 +169,123 @@ class TestLogParser:
         log_parser.parse_line("INFO: workload rejected")
         
         assert state.state == initial_state
+
+    def test_parse_line_matrix_status(self):
+        """Test parsing matrix status from log line."""
+        log_parser.parse_line("INFO: Received desired state from matrix - 3 workloads")
+        
+        assert state.state["matrix_status"] == "matrix_received"
+
+    def test_parse_line_wallet_info(self):
+        """Test parsing wallet information."""
+        log_parser.parse_line("Wallet: Current($100.50), Predicted($200.75)")
+        
+        assert state.state["wallet_balance"] == "$100.50"
+        assert state.state["wallet_projected"] == "$200.75"
+
+    def test_parse_line_job_id(self):
+        """Test parsing job ID from log line."""
+        log_parser.parse_line("New job: salad.com/sce/abc-def-123-456")
+        
+        assert state.state["job_id"] == "abc-def-123-456"
+        assert state.state["container_status"] == "Starting..."
+
+    def test_parse_line_layer_progress(self):
+        """Test parsing layer download progress."""
+        log_parser.parse_line("Pull progress event: layer@sha256:abcd1234 99.5")
+        
+        assert state.state["download_active_layer"] == "abcd1234"
+        assert state.state["download_layer_progress"] == 9950.0  # 99.5 * 100
+
+    def test_parse_line_global_progress(self):
+        """Test parsing global download progress."""
+        # Set up preconditions
+        state.state["download_total_mb"] = 100.0
+        
+        log_parser.parse_line("Progress(0.50)")
+        
+        assert state.state["download_progress_pct"] == 50.0
+
+    def test_parse_line_container_running(self):
+        """Test parsing container running status."""
+        log_parser.parse_line("Container status: Running(Ready)")
+        
+        assert state.state["container_status"] == "Running (Stable)"
+
+    def test_extract_timestamp(self):
+        """Test timestamp extraction from log line."""
+        line = "2024-01-15 14:30:45 INFO: Some message"
+        timestamp = log_parser._extract_timestamp(line)
+        
+        assert timestamp is not None
+        assert timestamp.year == 2024
+        assert timestamp.month == 1
+        assert timestamp.day == 15
+        assert timestamp.hour == 14
+        assert timestamp.minute == 30
+        assert timestamp.second == 45
+
+    def test_extract_timestamp_invalid(self):
+        """Test timestamp extraction with invalid format."""
+        line = "No timestamp here"
+        timestamp = log_parser._extract_timestamp(line)
+        
+        assert timestamp is None
+
+    def test_extract_timestamp_malformed(self):
+        """Test timestamp extraction with malformed date."""
+        line = "2024-13-45 99:99:99 Invalid date"
+        timestamp = log_parser._extract_timestamp(line)
+        
+        assert timestamp is None
+
+    def test_parse_line_new_job_resets_download(self):
+        """Test that new job resets download progress tracking."""
+        # Set download state
+        state.state["download_progress_pct"] = 50.0
+        state.state["download_total_mb"] = 500.0
+        state.state["is_downloading"] = True
+        
+        # Parse new job
+        log_parser.parse_line("New job: salad.com/sce/new-job-id-123")
+        
+        # Should be reset
+        assert state.state["is_downloading"] == False
+        assert state.state["download_progress_pct"] is None
+        assert state.state["download_total_mb"] == 0.0
+
+    def test_parse_line_progress_with_speed(self):
+        """Test download progress with speed calculation."""
+        state.state["download_total_mb"] = 100.0
+        state.state["vnet_rx_kbps"] = 1024.0
+        
+        log_parser.parse_line("Progress(0.75)")
+        
+        assert state.state["download_progress_pct"] == 75.0
+        assert state.state["download_speed_kbps"] == 1024.0
+
+    def test_parse_line_layer_progress_with_comma(self):
+        """Test layer progress parsing with comma decimal separator."""
+        log_parser.parse_line("Pull progress event: layer@sha256:ef123456 99,9")
+        
+        assert state.state["download_layer_progress"] == 9990.0  # 99.9 * 100
+
+    def test_parse_multiple_patterns_same_line(self):
+        """Test parsing line with multiple patterns."""
+        log_parser.parse_line("Wallet: Current($50), Predicted($100) and Progress(0.25)")
+        
+        assert state.state["wallet_balance"] == "$50"
+        assert state.state["wallet_projected"] == "$100"
+        assert state.state["download_progress_pct"] == 25.0
+
+    def test_parse_line_already_installed(self):
+        """Test parsing 'already installed' container status."""
+        log_parser.parse_line("Container already installed and running")
+        
+        assert state.state["container_status"] == "Running (Stable)"
+
+    def test_parse_line_already_running(self):
+        """Test parsing 'already running' container status."""
+        log_parser.parse_line("Workload is already running")
+        
+        assert state.state["container_status"] == "Running (Stable)"

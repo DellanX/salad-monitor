@@ -8,7 +8,7 @@ DEFAULT_LOG_DIR = "/logs"
 try:
     from version import VERSION
 except Exception:
-    VERSION = "2.0.0"
+    VERSION = "0.2.0"
 
 # Debug mode (compile-time or env override)
 DEBUG = os.environ.get("DEBUG", "false").lower() == "true"

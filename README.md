@@ -16,7 +16,7 @@ This service watches your Salad logs, tracks GPU activity, workload state, hardw
   - GPU reservation state
   - Last event and current logfile
 
-### Enhanced Metrics (v2.0+)
+### Enhanced Metrics (v0.2+)
 - **💰 Wallet Information**: Balance, projected earnings, last update time
 - **📦 Job Tracking**: Job ID, uptime, container status, matrix connection
 - **⬇️ Download Progress**: Real-time progress %, speed, ETA for container downloads
