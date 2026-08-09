@@ -41,6 +41,7 @@ You can run Salad Monitor:
 
 - As a Docker container
 - In Portainer
+- As a native Windows EXE
 - Directly via Python
 - As a systemd service
 
@@ -82,6 +83,11 @@ docker run -d \
 | `ENABLE_NETWORK_MONITORING`    | Enable network bandwidth tracking            | `true`  |
 | `ENABLE_PROCESS_MONITORING`    | Enable Salad process and miner detection     | `true`  |
 | `GPU_DEMAND_CACHE_MINUTES`     | Cache duration for GPU demand API (minutes)  | `5`     |
+| `COLLECTOR_MODE`               | Collector mode (`local_psutil`, `sidecar_push`, `volume_scan`) | `local_psutil` |
+| `SIDECAR_AUTH_TOKEN`           | Required when `COLLECTOR_MODE=sidecar_push`  | _(unset)_ |
+| `SIDECAR_STALE_SECONDS`        | Sidecar heartbeat staleness window           | `120` |
+| `SALAD_VERSION_FILE`           | Version file or EXE path used in `volume_scan` | _(unset)_ |
+| `SALAD_BOWL_VERSION_FILE`      | Bowl version file or EXE path used in `volume_scan` | _(unset)_ |
 
 ## Docker Compose Example
 
@@ -103,7 +109,69 @@ services:
       - ENABLE_GPU_DEMAND_API=true
       - ENABLE_NETWORK_MONITORING=true
       - ENABLE_PROCESS_MONITORING=true
+      - COLLECTOR_MODE=sidecar_push
+      - SIDECAR_AUTH_TOKEN=change-me
 ```
+
+---
+
+## 🪟 Native Windows EXE
+
+You can build both executables (main monitor + optional sidecar):
+
+```powershell
+pip install -r requirements.txt
+pip install -r requirements-build.txt
+.\scripts\build-windows.ps1 -Version 0.2.0
+```
+
+Output:
+- `dist\salad-monitor.exe`
+- `dist\salad-sidecar.exe`
+
+### Run as Windows services
+
+Use NSSM to install either executable:
+
+```powershell
+.\scripts\install-salad-monitor-service.ps1 -NssmPath C:\tools\nssm\nssm.exe
+.\scripts\install-salad-sidecar-service.ps1 -NssmPath C:\tools\nssm\nssm.exe
+```
+
+### Sign artifacts
+
+```powershell
+.\scripts\sign-artifacts.ps1 -CertificateThumbprint <thumbprint>
+```
+
+> Sidecar is optional for native EXE installs. It is intended for Docker deployments where host metrics must be pushed into the container.
+
+Common sidecar target overrides:
+- `SIDECAR_TARGET_URL` (full URL override)
+- or granular values:
+  - `SIDECAR_TARGET_SCHEME` (default `http`)
+  - `SIDECAR_TARGET_HOST` (default `127.0.0.1`)
+  - `SIDECAR_TARGET_PORT` (default `8000`)
+  - `SIDECAR_TARGET_PATH` (default `/api/v1/sidecar/report`)
+
+### Sidecar authentication kickoff
+
+Sidecar auth is a shared-token flow (no interactive login):
+
+1. Set the container to sidecar mode with a token:
+   - `COLLECTOR_MODE=sidecar_push`
+   - `SIDECAR_AUTH_TOKEN=<long-random-token>`
+2. Start/restart Salad Monitor container.
+3. Set the same token on the Windows sidecar:
+   - `SIDECAR_AUTH_TOKEN=<same-token>`
+   - optional target override: `SIDECAR_TARGET_HOST`, `SIDECAR_TARGET_PORT`
+4. Start sidecar process/service.
+5. Verify:
+   - `GET /api/v1/collector`
+   - check `sidecar.last_seen`, `sidecar.stale=false`, and `sidecar.update_required`.
+
+If token mismatches, the sidecar gets `401` on `POST /api/v1/sidecar/report`.
+Sidecar compatibility is paired to the monitor build version (`minimum_supported_version` in collector status).
 
 ---
 
@@ -123,6 +191,8 @@ services:
 
 #### Comprehensive Data
 - `GET /api/v1/health` - Complete health with all enhanced metrics
+- `GET /api/v1/collector` - Collector mode, runtime settings, and sidecar status
+- `POST /api/v1/sidecar/report` - Sidecar payload ingest (only when `COLLECTOR_MODE=sidecar_push`)
 
 #### Wallet & Earnings
 - `GET /api/v1/wallet` - Wallet balance and projected earnings

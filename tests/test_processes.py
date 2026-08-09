@@ -252,3 +252,29 @@ class TestProcessMonitoring:
         
         for miner in expected_miners:
             assert any(miner in actual for actual in actual_miners)
+
+
+@pytest.mark.unit
+def test_update_salad_processes_sidecar_mode_skips_local_collection():
+    state.state.clear()
+    state.state.update({})
+    with patch("src.processes.COLLECTOR_MODE", "sidecar_push"):
+        processes.update_salad_processes()
+
+    assert state.state.get("collector_mode") == "sidecar_push"
+    assert state.state.get("process_data_source") == "sidecar"
+
+
+@pytest.mark.unit
+def test_update_salad_processes_volume_mode_reads_version_files(tmp_path):
+    salad_file = tmp_path / "salad-version.txt"
+    bowl_file = tmp_path / "bowl-version.txt"
+    salad_file.write_text("1.2.3\n", encoding="utf-8")
+    bowl_file.write_text("4.5.6\n", encoding="utf-8")
+
+    with patch("src.processes.COLLECTOR_MODE", "volume_scan"), patch("src.processes.SALAD_VERSION_FILE", str(salad_file)), patch("src.processes.SALAD_BOWL_VERSION_FILE", str(bowl_file)):
+        processes.update_salad_processes()
+
+    assert state.state.get("salad_version") == "1.2.3"
+    assert state.state.get("salad_bowl_version") == "4.5.6"
+    assert state.state.get("process_data_source") == "volume"

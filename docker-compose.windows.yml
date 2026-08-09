@@ -38,6 +38,9 @@ services:
       ENABLE_GPU_DEMAND_API: "true"
       ENABLE_NETWORK_MONITORING: "true"
       ENABLE_PROCESS_MONITORING: "true"
+      COLLECTOR_MODE: "sidecar_push"
+      SIDECAR_AUTH_TOKEN: "change-me"
+      SIDECAR_STALE_SECONDS: "120"
       
       # GPU Demand API cache (in minutes)
       GPU_DEMAND_CACHE_MINUTES: "5"

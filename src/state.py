@@ -83,6 +83,16 @@ class MonitorState(TypedDict, total=False):
     salad_bowl_uptime_seconds: Optional[float]
     miner_active: bool
     miner_name: Optional[str]
+
+    # Collection/source information
+    collector_mode: str
+    process_data_source: Optional[str]
+    sidecar_version: Optional[str]
+    sidecar_schema_version: Optional[str]
+    sidecar_host_id: Optional[str]
+    sidecar_last_seen: Optional[datetime]
+    sidecar_last_payload_time: Optional[datetime]
+    sidecar_update_required: bool
     
     # Error tracking
     last_warning: Optional[str]
@@ -154,6 +164,14 @@ state: MonitorState = {
     "salad_bowl_uptime_seconds": None,
     "miner_active": False,
     "miner_name": None,
+    "collector_mode": "local_psutil",
+    "process_data_source": None,
+    "sidecar_version": None,
+    "sidecar_schema_version": None,
+    "sidecar_host_id": None,
+    "sidecar_last_seen": None,
+    "sidecar_last_payload_time": None,
+    "sidecar_update_required": False,
     "last_warning": None,
     "last_warning_time": None,
 }
@@ -274,3 +292,12 @@ def set_last_warning(message: str) -> None:
     state["last_warning"] = message
     state["last_warning_time"] = datetime.now()
 
+
+def set_collector_mode(mode: str) -> None:
+    """Update active collector mode."""
+    state["collector_mode"] = mode
+
+
+def set_process_data_source(source: str) -> None:
+    """Track the source for current process/version fields."""
+    state["process_data_source"] = source

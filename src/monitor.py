@@ -7,11 +7,13 @@ from src.config import (
     ENABLE_HARDWARE_MONITORING,
     ENABLE_NETWORK_MONITORING,
     ENABLE_PROCESS_MONITORING,
-    ENABLE_GPU_DEMAND_API
+    ENABLE_GPU_DEMAND_API,
+    COLLECTOR_MODE,
 )
 from src.log_watcher import get_latest_log_file, tail_file
 from src.log_parser import parse_line
 from src import state as state_module
+from src.sidecar import get_sidecar_status
 
 # Import monitoring modules
 HARDWARE_AVAILABLE = False
@@ -56,6 +58,7 @@ def monitor_logs() -> None:
     debug(f"Features enabled - HW:{HARDWARE_AVAILABLE} NET:{NETWORK_AVAILABLE} PROC:{PROCESSES_AVAILABLE} GPU_API:{GPU_DEMAND_AVAILABLE}")
     
     loop_counter = 0
+    state_module.set_collector_mode(COLLECTOR_MODE)
 
     while True:
         latest = get_latest_log_file()
@@ -77,6 +80,16 @@ def monitor_logs() -> None:
         
         # Update hardware and system metrics every 2 iterations (every ~2 seconds)
         if loop_counter % 2 == 0:
+            if COLLECTOR_MODE == "sidecar_push":
+                sidecar_status = get_sidecar_status()
+                if sidecar_status["stale"]:
+                    state_module.set_last_warning(
+                        "Sidecar data is stale or missing; waiting for sidecar payload."
+                    )
+                loop_counter += 1
+                time.sleep(1)
+                continue
+
             if HARDWARE_AVAILABLE:
                 try:
                     update_all_hardware()

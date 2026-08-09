@@ -2,8 +2,9 @@
 
 import platform
 import subprocess
+import os
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional
 
 try:
     import psutil
@@ -12,7 +13,12 @@ except ImportError:
     PSUTIL_AVAILABLE = False
     print("WARNING: psutil not available, process detection disabled")
 
-from src.config import debug
+from src.config import (
+    debug,
+    COLLECTOR_MODE,
+    SALAD_VERSION_FILE,
+    SALAD_BOWL_VERSION_FILE,
+)
 from src import state as state_module
 
 
@@ -26,6 +32,16 @@ MINER_NAMES = [
 
 def update_salad_processes() -> None:
     """Detect Salad and Salad Bowl Service processes, get versions and uptime."""
+    state_module.set_collector_mode(COLLECTOR_MODE)
+
+    if COLLECTOR_MODE == "sidecar_push":
+        state_module.set_process_data_source("sidecar")
+        return
+
+    if COLLECTOR_MODE == "volume_scan":
+        _update_salad_processes_from_volume()
+        return
+
     if not PSUTIL_AVAILABLE:
         return
     
@@ -97,6 +113,7 @@ def update_salad_processes() -> None:
         state_module.state["salad_uptime_seconds"] = salad_uptime
         state_module.state["salad_bowl_version"] = bowl_version if bowl_version else ("Offline" if not bowl_start_time else "Unknown")
         state_module.state["salad_bowl_uptime_seconds"] = bowl_uptime
+        state_module.set_process_data_source("local_psutil")
         
         debug(f"SALAD: v{salad_version} (uptime: {salad_uptime}s), Bowl: v{bowl_version} (uptime: {bowl_uptime}s)")
         
@@ -106,6 +123,9 @@ def update_salad_processes() -> None:
 
 def update_miner_detection() -> None:
     """Detect active miner processes."""
+    if COLLECTOR_MODE in {"sidecar_push", "volume_scan"}:
+        return
+
     if not PSUTIL_AVAILABLE:
         return
     
@@ -155,6 +175,34 @@ def _get_version_from_file(file_path: str) -> Optional[str]:
         pass
     
     return None
+
+
+def _read_version_from_path(path_value: Optional[str]) -> Optional[str]:
+    if not path_value:
+        return None
+
+    if os.path.exists(path_value) and path_value.lower().endswith(".exe"):
+        return _get_version_from_file(path_value)
+
+    if not os.path.exists(path_value):
+        return None
+
+    with open(path_value, "r", encoding="utf-8") as file_handle:
+        first_line = file_handle.readline().strip()
+        return first_line or None
+
+
+def _update_salad_processes_from_volume() -> None:
+    salad_version = _read_version_from_path(SALAD_VERSION_FILE)
+    bowl_version = _read_version_from_path(SALAD_BOWL_VERSION_FILE)
+
+    state_module.state["salad_version"] = salad_version
+    state_module.state["salad_uptime_seconds"] = None
+    state_module.state["salad_bowl_version"] = bowl_version
+    state_module.state["salad_bowl_uptime_seconds"] = None
+    state_module.state["miner_active"] = False
+    state_module.state["miner_name"] = None
+    state_module.set_process_data_source("volume")
 
 
 def _get_bowl_service_path_from_registry() -> Optional[str]:
