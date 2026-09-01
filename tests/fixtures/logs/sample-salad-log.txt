@@ -1,0 +1,15 @@
+2026-08-30 14:02:11.123 +00:00 [INF] Salad Bowl Service starting...
+2026-08-30 14:02:12.456 +00:00 [INF] Received desired state from matrix - 1 workloads
+2026-08-30 14:02:13.789 +00:00 [INF] Wallet: Current(12.3456), Predicted(0.4500)
+2026-08-30 14:02:14.012 +00:00 [INF] Job assigned: salad.com/sce/a1b2c3d4-e5f6-7890-abcd-1234567890ab
+2026-08-30 14:02:15.345 +00:00 [INF] Pull progress event: image@sha256:1a2b3c4d5e6f7a8b 0.25
+2026-08-30 14:02:16.678 +00:00 [INF] Progress(0.25)
+2026-08-30 14:02:20.901 +00:00 [INF] Progress(0.75)
+2026-08-30 14:02:25.123 +00:00 [INF] Progress(1.0)
+2026-08-30 14:02:26.456 +00:00 [INF] Running(Ready) - Workload container initialized
+2026-08-30 14:02:27.789 +00:00 [INF] Workload Bandwidth-us-east-1 active
+2026-08-30 14:02:28.012 +00:00 [INF] Heartbeat sent to matrix
+2026-08-30 14:02:29.345 +00:00 [INF] DistroSize = 4294967296
+2026-08-30 14:03:00.000 +00:00 [WRN] High GPU memory utilization detected
+2026-08-30 14:03:15.000 +00:00 [ERR] Network connection reset by peer
+2026-08-30 14:05:00.000 +00:00 [INF] Stopping workload Bandwidth-us-east-1

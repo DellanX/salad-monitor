@@ -1,103 +1,88 @@
-# 🥗 Salad Monitor
+# 🥗 Salad Monitor v1.0
 
-A comprehensive FastAPI service that monitors your Salad GPU workload with enhanced metrics and exposes clean REST APIs for Home Assistant or other automation systems.
+A lightweight, single-binary monitoring daemon and real-time Vue 3 web interface for [Salad Bowl](https://salad.com) node operators.
 
-This service watches your Salad logs, tracks GPU activity, workload state, hardware metrics, network statistics, and provides detailed JSON APIs for external systems.
-
----
-
-## 🚀 Features
-
-### Core Monitoring
-- Real‑time monitoring of Salad GPU activity
-- Parses Salad log files for:
-  - Active workload state
-  - Pending workload state
-  - GPU reservation state
-  - Last event and current logfile
-
-### Enhanced Metrics (v0.2+)
-- **💰 Wallet Information**: Balance, projected earnings, last update time
-- **📦 Job Tracking**: Job ID, uptime, container status, matrix connection
-- **⬇️ Download Progress**: Real-time progress %, speed, ETA for container downloads
-- **🌐 GPU Demand Data**: Market demand, earning rates from Salad's public API
-- **🖥️ Hardware Metrics**: CPU/RAM/GPU utilization, temperature, power draw
-- **📊 Network Stats**: Real-time bandwidth usage (WSL and SGS processes)
-- **⚙️ Process Info**: Salad/Bowl Service versions, uptime, miner detection
-- **🐧 WSL Monitoring**: Status and resource usage
-- **⚠️ Error Tracking**: Last warnings/errors from logs
-
-### API
-- Clean REST API with both legacy and `/api/v1` endpoints
-- Lightweight FastAPI server
-- Docker‑ready
-- Works seamlessly with the **Salad Monitor Home Assistant Integration**
+> **BREAKING CHANGE (v1.0)**: Salad Monitor has been completely rewritten from Python/FastAPI into a high-performance Rust daemon (`salad-monitord`) with an embedded Vue 3 SPA web UI. The separate Windows sidecar process is no longer required.
 
 ---
 
-## 📦 Installation
+## ✨ Features
 
-You can run Salad Monitor:
-
-- As a Docker container
-- In Portainer
-- As a native Windows EXE
-- Directly via Python
-- As a systemd service
-
-Below are the recommended installation methods.
+- **Single Binary**: Zero runtime dependencies. Web UI, HTTP REST API, SSE streaming server, SQLite webhook database, and hardware collectors bundled into one `.exe`.
+- **Real-Time Telemetry**: Instant 1-second metric updates via Server-Sent Events (SSE).
+- **Log-Parsed Container State**: Container workload IDs, download ETA, wallet balance, and WSL disk usage parsed directly from Salad log files.
+- **NVIDIA GPU Monitoring**: Direct NVML hardware monitoring (utilization, VRAM, temp, power, fan speed, clock speeds, and per-PID process classification) without spawning external subprocesses.
+- **mDNS Autodiscovery**: Service autodiscovery (`_salad-monitor._tcp.local.`) across multi-node setups without host daemons.
+- **Signed Webhooks**: HMAC-SHA256 signed event notifications with automatic exponential backoff retries.
+- **Docker Desktop Ready**: Deployable as a native Windows application or as a Docker container.
 
 ---
 
-## 🐳 Docker Installation (Recommended)
+## 🚀 Quick Start
 
-The official image is published to GitHub Container Registry:
+### Windows Native (.exe)
 
-ghcr.io/dellanx/salad-monitor:latest
+1. Download `salad-monitord.exe` from [Releases](https://github.com/dellanx/salad-monitor/releases).
+2. Run `salad-monitord.exe`.
+3. Open `http://localhost:8765` in your browser.
 
-### Run with Docker CLI
+### Docker Compose
 
-```bash
-docker run -d \
-  --name salad-monitor \
-  -p 8000:8000 \
-  -v C:\ProgramData\Salad\logs:/logs \
-  ghcr.io/dellanx/salad-monitor:latest
-```
-
-### Required volume
-
-| Host Path                   | Container Path | Purpose                      |
-| --------------------------- | -------------- | ---------------------------- |
-| `C:\ProgramData\Salad\logs` | `/logs`        | Folder containing Salad logs |
-
-### Environment Variables
-
-| Variable                       | Description                                  | Default |
-| ------------------------------ | -------------------------------------------- | ------- |
-| `LOG_DIR`                      | Path to Salad logs inside container         | `/logs` |
-| `PORT`                         | API port                                     | `8000`  |
-| `DEBUG`                        | Enable debug mode                            | `false` |
-| `ENABLE_HARDWARE_MONITORING`   | Enable CPU/RAM/GPU/Disk monitoring           | `true`  |
-| `ENABLE_GPU_DEMAND_API`        | Enable GPU demand data from Salad API        | `true`  |
-| `ENABLE_NETWORK_MONITORING`    | Enable network bandwidth tracking            | `true`  |
-| `ENABLE_PROCESS_MONITORING`    | Enable Salad process and miner detection     | `true`  |
-| `GPU_DEMAND_CACHE_MINUTES`     | Cache duration for GPU demand API (minutes)  | `5`     |
-| `COLLECTOR_MODE`               | Collector mode (`local_psutil`, `sidecar_push`, `volume_scan`) | `local_psutil` |
-| `SIDECAR_AUTH_TOKEN`           | Required when `COLLECTOR_MODE=sidecar_push`  | _(unset)_ |
-| `SIDECAR_STALE_SECONDS`        | Sidecar heartbeat staleness window           | `120` |
-| `SALAD_VERSION_FILE`           | Version file or EXE path used in `volume_scan` | _(unset)_ |
-| `SALAD_BOWL_VERSION_FILE`      | Bowl version file or EXE path used in `volume_scan` | _(unset)_ |
-
-## Docker Compose Example
-
-```docker-compose
-version: "3.9"
-
+```yaml
+version: '3.8'
 services:
   salad-monitor:
-    image: ghcr.io/dellanx/salad-monitor:latest
-    container_name: salad-monitor
+    image: salad-monitor:latest
+    ports:
+      - "8765:8765"
+    volumes:
+      - type: bind
+        source: C:\ProgramData\Salad\logs
+        target: /app/logs
+        read_only: true
+    environment:
+      - NVIDIA_DRIVER_CAPABILITIES=utility,compute
+```
+
+```bash
+docker compose up -d
+```
+
+---
+
+## 🛠️ Architecture Overview
+
+```
+                      +---------------------------------------+
+                      |         salad-monitord (Rust)         |
+                      |                                       |
+                      |  +---------------------------------+  |
+                      |  |      Axum Web & SSE Server      |  |
+                      |  +---------------------------------+  |
+                      |  |   Embedded Vue 3 SPA (rust-embed)|  |
+                      |  +---------------------------------+  |
+                      |  | Collectors: nvml / sysinfo / logs|  |
+                      +--+---------------------------------+--+
+                                         |
+                                         v
+                         http://localhost:8765 (Dashboard)
+```
+
+For complete technical specifications, see:
+- [Architecture & ADRs](docs/architecture.md)
+- [SaladXRay Feature Parity Matrix](docs/parity.md)
+- [API Contract](docs/api.md)
+- [Security Model](docs/security.md)
+- [Deployment Guide](docs/deployment.md)
+
+---
+
+## ⚠️ Hardware Compatibility Notice
+
+- **NVIDIA GPUs**: Full support via `nvml-wrapper` 0.13.
+- **AMD GPUs**: Unsupported in v1.0 due to OS-specific crate limitations on Windows native. Non-NVIDIA systems operate cleanly with GPU metrics gracefully disabled.
+- **Intel GPUs**: Unsupported.
+
     restart: unless-stopped
     ports:
       - "8000:8000"

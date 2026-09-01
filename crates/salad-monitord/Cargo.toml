@@ -1,0 +1,30 @@
+[package]
+name = "salad-monitord"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+salad-collect = { path = "../salad-collect" }
+salad-logparse = { path = "../salad-logparse" }
+salad-webhook = { path = "../salad-webhook" }
+
+tokio.workspace = true
+axum.workspace = true
+tower.workspace = true
+tower-http.workspace = true
+tower_governor.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+rust-embed.workspace = true
+jsonwebtoken.workspace = true
+argon2.workspace = true
+mdns-sd.workspace = true
+rand.workspace = true
+sha2.workspace = true

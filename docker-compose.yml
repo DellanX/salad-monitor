@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  salad-monitor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: salad-monitor
+    restart: unless-stopped
+    ports:
+      - "8765:8765"
+    volumes:
+      # Bind-mount Salad log directory read-only
+      - type: bind
+        source: C:\ProgramData\Salad\logs
+        target: /app/logs
+        read_only: true
+      - salad_monitor_data:/app/data
+    environment:
+      - SALAD_LOG_DIR=/app/logs
+      - NVIDIA_DRIVER_CAPABILITIES=utility,compute
+      - NVIDIA_VISIBLE_DEVICES=all
+    # Optional: uncomment pid: host to enable per-process GPU attribution in NVML
+    # pid: host
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu, utility, compute]
+
+volumes:
+  salad_monitor_data:

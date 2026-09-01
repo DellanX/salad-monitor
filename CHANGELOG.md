@@ -2,8 +2,22 @@
 
 All notable changes to the Salad Monitor project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+---
+
+## [1.0.0] - 2026-09-01
+
+### 🚀 Major Breaking Architectural Rewrite
+- **Single-Binary Rust Daemon (`salad-monitord`)**: Replaced legacy Python/FastAPI server and separate Windows sidecar daemon with a unified Rust binary.
+- **Embedded Vue 3 SPA**: Embedded real-time Vue 3 dashboard into the binary using `rust-embed`.
+- **NVIDIA GPU Support (`nvml-wrapper` 0.13)**: Telemetry powered by NVML via dynamic dlopen.
+- **Server-Sent Events (SSE)**: Streaming real-time updates over `/api/v1/stream`.
+- **mDNS Service Autodiscovery**: Pure Rust `mdns-sd` registering `_salad-monitor._tcp.local.`.
+- **SQLite Webhooks**: Persisted webhook subscriptions with HMAC-SHA256 signatures and exponential backoff.
+
+### ⚠️ Deprecations & Breaking Changes
+- **Removed Python codebase**: Deleted FastAPI backend and sidecar daemon.
+- **Removed AMD GPU support**: Dropped OS-specific AMD performance counter queries.
+- **API Endpoint Changes**: Legacy `/api/v0` endpoints replaced by `/api/v1` REST & SSE contracts.
 
 ---
 
