@@ -1,0 +1,14 @@
+{
+  "features": {
+    "ghcr.io/devcontainers-extra/features/vue-cli:2": {
+      "version": "2.0.16",
+      "resolved": "ghcr.io/devcontainers-extra/features/vue-cli@sha256:ff0cbfded89c67b36e55876c01b11a9f2a3292d1f724ecf0a837a0df5b9f6668",
+      "integrity": "sha256:ff0cbfded89c67b36e55876c01b11a9f2a3292d1f724ecf0a837a0df5b9f6668"
+    },
+    "ghcr.io/devcontainers/features/nvidia-cuda:3": {
+      "version": "3.0.0",
+      "resolved": "ghcr.io/devcontainers/features/nvidia-cuda@sha256:144e3c199d51688baea43ff20e5d931381a5990cb7b323bade9f4d6d67876ee3",
+      "integrity": "sha256:144e3c199d51688baea43ff20e5d931381a5990cb7b323bade9f4d6d67876ee3"
+    }
+  }
+}

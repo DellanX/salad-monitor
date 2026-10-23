@@ -3,7 +3,7 @@
 use salad_collect::demand_api::GpuDemandInfo;
 use salad_collect::nvml_collector::GpuTelemetrySnapshot;
 use salad_collect::sysinfo_collector::SystemTelemetrySnapshot;
-use salad_logparse::state_machine::LogStateSnapshot;
+use salad_logparse::state_machine::{LogStateSnapshot, WorkloadStatus};
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::sync::{Arc, RwLock};
@@ -48,7 +48,18 @@ pub struct MetricSample {
     pub memory_usage_pct: f32,
     pub gpu_usage_pct: Option<u32>,
     pub gpu_temp_c: Option<u32>,
+    pub gpu_memory_pct: Option<f32>,
     pub power_w: Option<f32>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WorkloadHistoryEvent {
+    pub id: String,
+    pub name: String,
+    pub workload_type: String, // 'scheduled', 'started', 'completed'
+    pub timestamp_secs: i64,
+    pub status: WorkloadStatus,
+    pub duration_seconds: Option<u64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -60,6 +71,7 @@ pub struct UnifiedSnapshot {
     pub log_state: LogStateSnapshot,
     pub demand: Vec<GpuDemandInfo>,
     pub history: Vec<MetricSample>,
+    pub workload_history: Vec<WorkloadHistoryEvent>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -87,6 +99,7 @@ impl AppState {
             log_state: LogStateSnapshot::default(),
             demand: Vec::new(),
             history: Vec::new(),
+            workload_history: Vec::new(),
         };
 
         Arc::new(Self {
@@ -109,5 +122,20 @@ impl AppState {
 
     pub fn get_snapshot(&self) -> UnifiedSnapshot {
         self.current_snapshot.read().unwrap().clone()
+    }
+
+    pub fn add_workload_event(&self, event: WorkloadHistoryEvent) {
+        let mut snap = self.current_snapshot.write().unwrap();
+        // Keep only the last 100 workload events to prevent unbounded growth
+        if snap.workload_history.len() >= 100 {
+            snap.workload_history.remove(0);
+        }
+        snap.workload_history.push(event);
+    }
+
+    pub fn broadcast_event(&self, event: SseEvent) {
+        if let Err(e) = self.broadcaster.send(event) {
+            eprintln!("Failed to broadcast event: {}", e);
+        }
     }
 }

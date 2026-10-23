@@ -1,8 +1,8 @@
 //! Cross-platform system telemetry collector using sysinfo.
 
 use serde::{Deserialize, Serialize};
-use std::time::{Duration, Instant};
-use sysinfo::{CpuRefreshKind, DiskKind, Disks, Networks, System};
+use std::time::Instant;
+use sysinfo::{CpuRefreshKind, Disks, Networks, System};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CpuMetrics {
@@ -68,7 +68,7 @@ pub struct SysinfoCollector {
 impl SysinfoCollector {
     pub fn new() -> Self {
         let mut sys = System::new_all();
-        sys.refresh_cpu_all();
+        sys.refresh_cpu_specifics(CpuRefreshKind::everything());
         sys.refresh_memory();
 
         let disks = Disks::new_with_refreshed_list();
@@ -90,7 +90,7 @@ impl SysinfoCollector {
         self.disks.refresh();
         self.networks.refresh();
 
-        let cpu_usage = self.sys.global_cpu_usage();
+        let cpu_usage = self.sys.global_cpu_info().cpu_usage();
         let cpu_brand = self
             .sys
             .cpus()

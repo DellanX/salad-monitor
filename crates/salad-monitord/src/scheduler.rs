@@ -1,6 +1,6 @@
 //! Periodic background telemetry collection, log tailing, and snapshot update loops.
 
-use crate::state::{AppState, MetricSample};
+use crate::state::{AppState, MetricSample, SseEvent};
 use salad_collect::nvml_collector::NvmlCollector;
 use salad_collect::sysinfo_collector::SysinfoCollector;
 use salad_logparse::state_machine::LogStateMachine;
@@ -27,6 +27,7 @@ pub fn start_scheduler(state: Arc<AppState>, log_dir: PathBuf) {
                 memory_usage_pct: sys_snap.memory.usage_pct,
                 gpu_usage_pct: gpu_snap.devices.first().map(|d| d.gpu_utilization_pct),
                 gpu_temp_c: gpu_snap.devices.first().map(|d| d.temperature_c),
+                gpu_memory_pct: gpu_snap.devices.first().map(|d| d.memory_utilization_pct as f32),
                 power_w: gpu_snap.devices.first().map(|d| d.power_usage_w),
             };
 
@@ -38,6 +39,11 @@ pub fn start_scheduler(state: Arc<AppState>, log_dir: PathBuf) {
                 snap.system = Some(sys_snap);
                 snap.gpu = Some(gpu_snap);
             }
+
+            // Broadcast the snapshot event
+            let snapshot_event = SseEvent::Snapshot(state_clone.get_snapshot());
+            // Suppress errors when there are no subscribers to avoid spam in logs
+            let _ = state_clone.broadcaster.send(snapshot_event);
 
             sleep(Duration::from_secs(1)).await;
         }
@@ -61,7 +67,24 @@ pub fn start_scheduler(state: Arc<AppState>, log_dir: PathBuf) {
                 snap.log_state = log_snap;
             }
 
+            // Broadcast the snapshot event with updated log state
+            let snapshot_event = SseEvent::Snapshot(state_clone.get_snapshot());
+            // Suppress errors when there are no subscribers to avoid spam in logs
+            let _ = state_clone.broadcaster.send(snapshot_event);
+
             sleep(Duration::from_secs(2)).await;
+        }
+    });
+
+    // 30-second heartbeat loop
+    let state_clone = Arc::clone(&state);
+    tokio::spawn(async move {
+        loop {
+            let heartbeat_event = SseEvent::Heartbeat(chrono::Utc::now().timestamp());
+            // Suppress errors when there are no subscribers to avoid spam in logs
+            let _ = state_clone.broadcaster.send(heartbeat_event);
+            
+            sleep(Duration::from_secs(30)).await;
         }
     });
 }

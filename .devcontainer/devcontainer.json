@@ -1,35 +1,50 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/rust
 {
-  "name": "Salad Monitor Dev",
-  "image": "mcr.microsoft.com/devcontainers/python:3.11",
-  
-  "customizations": {
-    "vscode": {
-      "extensions": [
-        "ms-python.python",
-        "ms-python.vscode-pylance",
-        "ms-python.black-formatter",
-        "ms-python.debugpy"
-      ],
-      "settings": {
-        "python.defaultInterpreterPath": "/usr/local/bin/python",
-        "python.testing.pytestEnabled": true,
-        "python.testing.unittestEnabled": false,
-        "python.testing.pytestArgs": ["tests"],
-        "python.linting.enabled": true,
-        "python.linting.pylintEnabled": false,
-        "python.formatting.provider": "black"
-      }
-    }
-  },
+	"name": "Rust",
+	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+	"image": "mcr.microsoft.com/devcontainers/rust:2-1-trixie",
+	"features": {
+		"ghcr.io/devcontainers/features/nvidia-cuda:3": {
+			"installNvtx": true,
+			"installToolkit": true,
+			"cudaVersion": "12.5",
+			"cudnnVersion": "automatic"
+		},
+		"ghcr.io/devcontainers-extra/features/vue-cli:2": {
+			"version": "latest"
+		}
+	},
 
-  "postCreateCommand": "pip install -r requirements.txt",
-  
-  "forwardPorts": [8001],
-  
-  "remoteUser": "vscode",
-  "updateRemoteUserUID": true,
-  
-  "containerEnv": {
-    "LOG_DIR": "${containerWorkspaceFolder}/logs"
-  }
+	// Use 'mounts' to make the cargo cache persistent in a Docker Volume.
+	"mounts": [
+		{
+			"source": "C:\\ProgramData\\Salad\\logs",
+			"target": "/app/logs",
+			"type": "bind"
+		}
+	],
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"Vue.volar",
+				"Ollama.ollama"
+			]
+		}
+	},
+	
+	// Enable GPU access for NVML
+	"runArgs": [
+		"--gpus",
+		"all"
+	],
+	
+	// Use 'postCreateCommand' to run commands after the container is created.
+	"postCreateCommand": "rustc --version && echo 'GPU access enabled'",
+
+	// Configure tool-specific properties.
+	// "customizations": {},
+
+	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+	// "remoteUser": "root"
 }

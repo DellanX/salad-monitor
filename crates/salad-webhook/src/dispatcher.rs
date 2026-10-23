@@ -50,7 +50,7 @@ impl WebhookDispatcher {
         }
 
         let signature = Self::sign_payload(&webhook.secret, payload_json);
-        let log_id = uuid::Uuid::new_v4().to_string();
+        let log_id = uuid::Uuid::nil().to_string();
 
         let mut attempts = 0;
         let max_attempts = 3;

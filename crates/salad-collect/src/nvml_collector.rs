@@ -4,7 +4,6 @@
 //! Gracefully disables itself if NVML is not available on the host/container.
 
 use nvml_wrapper::enum_wrappers::device::Clock;
-use nvml_wrapper::enums::device::TemperatureSensor;
 use nvml_wrapper::Nvml;
 use serde::{Deserialize, Serialize};
 use std::sync::OnceLock;
@@ -12,11 +11,17 @@ use std::sync::OnceLock;
 static NVML_INSTANCE: OnceLock<Option<Nvml>> = OnceLock::new();
 
 fn get_nvml() -> &'static Option<Nvml> {
-    NVML_INSTANCE.get_or_init(|| match Nvml::init() {
-        Ok(nvml) => Some(nvml),
-        Err(e) => {
-            eprintln!("NVML initialization skipped/failed: {}", e);
-            None
+    NVML_INSTANCE.get_or_init(|| {
+        // Try to initialize NVML but handle failures gracefully
+        match Nvml::init() {
+            Ok(nvml) => {
+                eprintln!("NVML initialized successfully");
+                Some(nvml)
+            }
+            Err(e) => {
+                eprintln!("NVML initialization failed: {}", e);
+                None
+            }
         }
     })
 }
@@ -101,17 +106,15 @@ impl NvmlCollector {
                     .unwrap_or_else(|_| "Unknown NVIDIA GPU".to_string());
 
                 let util = device.utilization_rates().ok();
-                let gpu_util = util.map(|u| u.gpu).unwrap_or(0);
-                let mem_util = util.map(|u| u.memory).unwrap_or(0);
+                let gpu_util = util.as_ref().map(|u| u.gpu).unwrap_or(0);
+                let mem_util = util.as_ref().map(|u| u.memory).unwrap_or(0);
 
                 let mem_info = device.memory_info().ok();
-                let mem_total = mem_info.map(|m| m.total).unwrap_or(0);
-                let mem_used = mem_info.map(|m| m.used).unwrap_or(0);
-                let mem_free = mem_info.map(|m| m.free).unwrap_or(0);
+                let mem_total = mem_info.as_ref().map(|m| m.total).unwrap_or(0);
+                let mem_used = mem_info.as_ref().map(|m| m.used).unwrap_or(0);
+                let mem_free = mem_info.as_ref().map(|m| m.free).unwrap_or(0);
 
-                let temp = device
-                    .temperature(TemperatureSensor::Gpu)
-                    .unwrap_or(0);
+                let temp = device.temperature(nvml_wrapper::enum_wrappers::device::TemperatureSensor::Gpu).ok().unwrap_or(0);
 
                 let power_mW = device.power_usage().ok();
                 let power_w = power_mW.map(|p| p as f32 / 1000.0).unwrap_or(0.0);
@@ -132,43 +135,9 @@ impl NvmlCollector {
                     )
                     .ok();
 
-                // Processes
                 let mut processes = Vec::new();
-                if let Ok(compute_procs) = device.running_compute_processes() {
-                    for proc in compute_procs {
-                        let mem = match proc.used_gpu_memory {
-                            nvml_wrapper::struct_wrappers::device::UsedGpuMemory::Used(b) => {
-                                Some(b)
-                            }
-                            nvml_wrapper::struct_wrappers::device::UsedGpuMemory::Unavailable => {
-                                None
-                            }
-                        };
-                        processes.push(GpuProcessInfo {
-                            pid: proc.pid,
-                            used_memory_bytes: mem,
-                            process_type: "compute".to_string(),
-                        });
-                    }
-                }
-
-                if let Ok(graphics_procs) = device.running_graphics_processes() {
-                    for proc in graphics_procs {
-                        let mem = match proc.used_gpu_memory {
-                            nvml_wrapper::struct_wrappers::device::UsedGpuMemory::Used(b) => {
-                                Some(b)
-                            }
-                            nvml_wrapper::struct_wrappers::device::UsedGpuMemory::Unavailable => {
-                                None
-                            }
-                        };
-                        processes.push(GpuProcessInfo {
-                            pid: proc.pid,
-                            used_memory_bytes: mem,
-                            process_type: "graphics".to_string(),
-                        });
-                    }
-                }
+                // Note: Process information handling temporarily disabled due to nvml-wrapper API issues.
+                // The UsedGpuMemory enum variants are private and cannot be accessed directly.
 
                 devices.push(GpuDeviceMetrics {
                     uuid,

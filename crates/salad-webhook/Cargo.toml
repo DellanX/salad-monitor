@@ -17,3 +17,5 @@ anyhow.workspace = true
 tracing.workspace = true
 sha2.workspace = true
 hmac.workspace = true
+uuid = "1.0"
+hex = "0.4"

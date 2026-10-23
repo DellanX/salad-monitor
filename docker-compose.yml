@@ -20,6 +20,8 @@ services:
       - SALAD_LOG_DIR=/app/logs
       - NVIDIA_DRIVER_CAPABILITIES=utility,compute
       - NVIDIA_VISIBLE_DEVICES=all
+      # Additional environment variables for WSL2 GPU access
+      - NVIDIA_REQUIRE_CUDA=cuda>=11.0
     # Optional: uncomment pid: host to enable per-process GPU attribution in NVML
     # pid: host
     deploy:
@@ -29,6 +31,8 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu, utility, compute]
+    # Ensure GPU access on WSL2 with Docker Desktop
+    runtime: nvidia
 
 volumes:
   salad_monitor_data:

@@ -48,6 +48,25 @@ services:
 docker compose up -d
 ```
 
+## 🛠️ Development Setup with GPU Access
+
+To enable GPU access in the devcontainer for testing NVML functionality on Windows with WSL2:
+
+1. Ensure Docker Desktop is running with WSL2 backend
+2. Enable GPU support in Docker Desktop Settings:
+   - Go to Settings → Resources → WSL Integration
+   - Enable integration for your WSL2 distribution
+   - Ensure "GPU Support" is enabled in Settings → Resources → GPU
+3. Rebuild the devcontainer:
+   ```bash
+   # In VS Code, run: 
+   # Dev Containers: Rebuild Container
+   # Or from terminal:
+   docker-compose build --no-cache
+   docker-compose up -d
+   ```
+4. Verify GPU access by running tests or using the test script in the repository root: `test_gpu_access.rs`
+
 ---
 
 ## 🛠️ Architecture Overview

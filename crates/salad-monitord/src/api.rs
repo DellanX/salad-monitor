@@ -1,18 +1,16 @@
 //! Axum HTTP REST and SSE routes.
 
 use crate::embed::static_handler;
-use crate::state::{AppState, SseEvent, UnifiedSnapshot};
+use crate::state::{AppState, UnifiedSnapshot};
 use axum::{
     extract::State,
     response::sse::{Event, Sse},
-    routing::{get, post},
+    routing::get,
     Json, Router,
 };
 use futures::stream::Stream;
 use std::convert::Infallible;
 use std::sync::Arc;
-use tokio_stream::wrappers::BroadcastStream;
-use tokio_stream::StreamExt;
 
 pub fn create_router(state: Arc<AppState>) -> Router {
     Router::new()
@@ -45,12 +43,16 @@ async fn sse_stream_handler(
     State(state): State<Arc<AppState>>,
 ) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let rx = state.broadcaster.subscribe();
-    let stream = BroadcastStream::new(rx).filter_map(|msg| match msg {
-        Ok(event) => match serde_json::to_string(&event) {
-            Ok(json) => Some(Ok(Event::default().data(json))),
-            Err(_) => None,
-        },
-        Err(_) => None,
+    let stream = futures::stream::unfold(rx, |mut rx| async {
+        match rx.recv().await {
+            Ok(event) => {
+                match serde_json::to_string(&event) {
+                    Ok(json) => Some((Ok(Event::default().data(json)), rx)),
+                    Err(_) => Some((Ok(Event::default().data("")), rx)), // Return empty event on serialization error
+                }
+            }
+            Err(_) => None, // Channel closed
+        }
     });
 
     Sse::new(stream)

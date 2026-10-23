@@ -64,6 +64,31 @@
         "panel": "shared"
       },
       "problemMatcher": []
+    },
+    {
+      "label": "Build Salad Monitor Service",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["build", "--bin", "salad-monitord", "--release"],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run Salad Monitor Service",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["run", "--bin", "salad-monitord", "--release"],
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "problemMatcher": [],
+      "isBackground": true
     }
   ]
 }

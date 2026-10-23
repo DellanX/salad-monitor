@@ -123,6 +123,7 @@ export interface MetricSample {
   cpu_usage_pct: number;
   memory_usage_pct: number;
   gpu_usage_pct?: number;
+  gpu_memory_pct?: number;
   gpu_temp_c?: number;
   power_w?: number;
 }

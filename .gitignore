@@ -32,3 +32,4 @@ secret.key
 .DS_Store
 Thumbs.db
 
+ui/tsconfig.tsbuildinfo
